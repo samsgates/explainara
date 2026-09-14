@@ -1,0 +1,3 @@
+export type EvalCase<I,O>={id:string;input:I;expected:(output:O)=>boolean;tags:string[]};
+export type EvalResult={id:string;passed:boolean;latencyMs:number;error?:string};
+export async function runEvalSuite<I,O>(cases:EvalCase<I,O>[],runner:(input:I)=>Promise<O>):Promise<{score:number;results:EvalResult[]}>{const results:EvalResult[]=[];for(const c of cases){const start=Date.now();try{const output=await runner(c.input);results.push({id:c.id,passed:c.expected(output),latencyMs:Date.now()-start})}catch(error){results.push({id:c.id,passed:false,latencyMs:Date.now()-start,error:error instanceof Error?error.message:String(error)})}}return{score:results.length?results.filter(r=>r.passed).length/results.length:0,results}}

@@ -1,0 +1,25 @@
+{
+  "name": "explainara",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Adaptive AI learning operating system built around OpenMAIC-compatible classroom experiences.",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {"node": ">=22.19.0"},
+  "scripts": {
+    "dev": "concurrently -n web,realtime,worker -c cyan,magenta,yellow \"pnpm --filter @explainara/web dev\" \"pnpm --filter @explainara/realtime dev\" \"pnpm --filter @explainara/worker dev\"",
+    "build": "pnpm -r --if-present build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "lint": "pnpm -r --if-present lint",
+    "db:generate": "pnpm --filter @explainara/db db:generate",
+    "db:push": "pnpm --filter @explainara/db db:push",
+    "db:migrate": "pnpm --filter @explainara/db db:migrate",
+    "db:seed": "pnpm --filter @explainara/db db:seed",
+    "docker:up": "docker compose up -d postgres redis qdrant minio",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "typescript": "^5.9.2"
+  }
+}

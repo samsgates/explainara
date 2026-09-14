@@ -1,0 +1,384 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  platform_admin
+  organization_admin
+  teacher
+  creator
+  student
+}
+
+enum CourseStatus {
+  draft
+  generating
+  published
+  archived
+}
+
+enum SourceType {
+  topic
+  text
+  document
+  website
+  youtube
+  github
+  paper
+}
+
+enum EvidenceType {
+  quiz
+  teach_back
+  simulation
+  project
+  conversation
+  coding
+  scenario
+  review
+}
+
+enum RelationType {
+  prerequisite
+  related
+  part_of
+  contrasts
+  applies
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  image       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  memberships Membership[]
+  learnerProfiles LearnerProfile[]
+  enrollments Enrollment[]
+  events      Event[]
+  agentRuns   AgentRun[]
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  settings    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  memberships Membership[]
+  courses     Course[]
+  classrooms Classroom[]
+  learnerProfiles LearnerProfile[]
+  events      Event[]
+  auditLogs   AuditLog[]
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  role           Role         @default(student)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model Course {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  description    String       @default("")
+  goal           String       @default("")
+  status         CourseStatus @default(draft)
+  sourceType     SourceType    @default(topic)
+  sourceUri      String?
+  sourceMetadata Json          @default("{}")
+  settings       Json          @default("{}")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  modules        CourseModule[]
+  concepts       Concept[]
+  classrooms     Classroom[]
+  enrollments    Enrollment[]
+  files          FileAsset[]
+  @@index([organizationId, status])
+}
+
+model CourseModule {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  objective   String   @default("")
+  order       Int
+  metadata    Json     @default("{}")
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@unique([courseId, order])
+}
+
+model Concept {
+  id               String   @id @default(cuid())
+  courseId         String
+  externalKey      String
+  title            String
+  description      String   @default("")
+  difficulty       Float    @default(0.5)
+  estimatedMinutes Int      @default(15)
+  tags             String[] @default([])
+  metadata         Json     @default("{}")
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  outgoing         ConceptEdge[] @relation("fromConcept")
+  incoming         ConceptEdge[] @relation("toConcept")
+  learnerStates    LearnerConcept[]
+  evidence         Evidence[]
+  misconceptions   Misconception[]
+  @@unique([courseId, externalKey])
+  @@index([courseId])
+}
+
+model ConceptEdge {
+  id        String       @id @default(cuid())
+  courseId  String
+  fromId    String
+  toId      String
+  relation  RelationType
+  weight    Float        @default(1)
+  from      Concept      @relation("fromConcept", fields: [fromId], references: [id], onDelete: Cascade)
+  to        Concept      @relation("toConcept", fields: [toId], references: [id], onDelete: Cascade)
+  @@unique([fromId, toId, relation])
+  @@index([courseId])
+}
+
+model Classroom {
+  id             String       @id @default(cuid())
+  organizationId String
+  courseId       String
+  title          String
+  status         String       @default("active")
+  settings       Json         @default("{}")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  course         Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  sessions       LearningSession[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  @@index([organizationId, courseId])
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  courseId  String
+  userId    String
+  status    String   @default("active")
+  progress  Float    @default(0)
+  enrolledAt DateTime @default(now())
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([courseId, userId])
+}
+
+model LearnerProfile {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  goals          String[]     @default([])
+  strengths      String[]     @default([])
+  weaknesses     String[]     @default([])
+  behavioralSignals String[]  @default([])
+  preferredExplanationPatterns String[] @default([])
+  pace           String       @default("balanced")
+  engagement     Float        @default(0.7)
+  metadata       Json         @default("{}")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concepts       LearnerConcept[]
+  sessions       LearningSession[]
+  @@unique([organizationId, userId])
+}
+
+model LearnerConcept {
+  id                String         @id @default(cuid())
+  learnerProfileId  String
+  conceptId         String
+  mastery           Float          @default(0.2)
+  confidence        Float          @default(0.3)
+  recall            Float          @default(0.25)
+  understanding     Float          @default(0.25)
+  application       Float          @default(0.2)
+  explanation       Float          @default(0.2)
+  problemSolving    Float          @default(0.2)
+  retentionStrength Float          @default(0.25)
+  forgettingRate    Float          @default(0.06)
+  evidenceCount     Int            @default(0)
+  lastReviewedAt    DateTime?
+  nextReviewAt      DateTime?
+  learnerProfile    LearnerProfile @relation(fields: [learnerProfileId], references: [id], onDelete: Cascade)
+  concept           Concept        @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  misconceptions    Misconception[]
+  @@unique([learnerProfileId, conceptId])
+  @@index([conceptId, mastery])
+}
+
+model Misconception {
+  id               String         @id @default(cuid())
+  learnerConceptId String
+  conceptId        String
+  label            String
+  explanation      String
+  confidence       Float
+  frequency        Int            @default(1)
+  resolved         Boolean        @default(false)
+  firstDetectedAt  DateTime       @default(now())
+  lastDetectedAt   DateTime       @default(now())
+  learnerConcept   LearnerConcept @relation(fields: [learnerConceptId], references: [id], onDelete: Cascade)
+  concept          Concept        @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  @@index([conceptId, resolved])
+}
+
+model Evidence {
+  id         String       @id @default(cuid())
+  tenantId   String
+  learnerId  String
+  conceptId  String
+  sessionId  String?
+  type       EvidenceType
+  score      Float
+  confidence Float?
+  dimensions Json         @default("{}")
+  latencyMs  Int?
+  metadata   Json         @default("{}")
+  createdAt  DateTime     @default(now())
+  concept    Concept      @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  session    LearningSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  @@index([tenantId, learnerId, conceptId, createdAt])
+}
+
+model LearningSession {
+  id               String         @id @default(cuid())
+  learnerProfileId String
+  classroomId      String
+  currentConceptId String?
+  status           String         @default("active")
+  startedAt        DateTime       @default(now())
+  endedAt          DateTime?
+  summary          Json           @default("{}")
+  learnerProfile   LearnerProfile @relation(fields: [learnerProfileId], references: [id], onDelete: Cascade)
+  classroom        Classroom      @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  evidence         Evidence[]
+  @@index([learnerProfileId, startedAt])
+}
+
+model Assessment {
+  id        String   @id @default(cuid())
+  courseId  String
+  title     String
+  kind      String
+  config    Json     @default("{}")
+  createdAt DateTime @default(now())
+}
+
+model AssessmentAttempt {
+  id           String   @id @default(cuid())
+  assessmentId String
+  learnerId    String
+  score        Float
+  answers      Json
+  feedback     Json     @default("{}")
+  createdAt    DateTime @default(now())
+  @@index([assessmentId, learnerId])
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  courseId  String
+  learnerId String?
+  title     String
+  brief     String
+  milestones Json    @default("[]")
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String?
+  classroomId    String?
+  conceptId      String?
+  type           String
+  payload        Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([organizationId, type, createdAt])
+}
+
+model AgentRun {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?
+  sessionId  String?
+  agent      String
+  provider   String
+  model      String
+  status     String
+  latencyMs  Int?
+  inputTokens Int?
+  outputTokens Int?
+  costUsd    Decimal? @db.Decimal(12, 6)
+  trace      Json     @default("{}")
+  error      String?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([tenantId, createdAt])
+}
+
+model FileAsset {
+  id        String   @id @default(cuid())
+  courseId  String?
+  tenantId  String
+  name      String
+  mimeType  String
+  size      Int
+  storageKey String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  tenantId  String
+  type      String
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId, readAt, createdAt])
+}
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  actorId        String?
+  action         String
+  targetType     String
+  targetId       String?
+  ip             String?
+  metadata       Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId, createdAt])
+}

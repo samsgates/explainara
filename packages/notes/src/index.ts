@@ -1,0 +1,3 @@
+export type Note={id:string;learnerId:string;conceptId?:string;body:string;createdAt:Date;updatedAt:Date};
+export type Flashcard={front:string;back:string;conceptId?:string;priority:number};
+export function notesToFlashcards(notes:Note[],weakConcepts:Set<string>=new Set()):Flashcard[]{return notes.flatMap(note=>note.body.split(/\n+/).filter(x=>x.length>20).slice(0,3).map(line=>{const [head,...rest]=line.split(/[:.-]\s+/);return{front:`Explain: ${head?.trim()||line.slice(0,50)}`,back:rest.join(" ").trim()||line,conceptId:note.conceptId,priority:note.conceptId&&weakConcepts.has(note.conceptId)?1:.5}})).sort((a,b)=>b.priority-a.priority)}

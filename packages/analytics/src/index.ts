@@ -1,0 +1,4 @@
+import type { ClassroomEvent, LearningEvidence } from "@explainara/shared";
+export function masteryGainPerHour(before:number,after:number,durationMinutes:number){return durationMinutes<=0?0:(after-before)/(durationMinutes/60)}
+export function interventionSuccess(events:ClassroomEvent[],evidence:LearningEvidence[]){const interventions=events.filter(e=>e.type==="teacher_intervention");if(!interventions.length)return 0;let success=0;for(const event of interventions){const after=evidence.find(x=>x.createdAt>event.createdAt&&(!event.conceptId||x.conceptId===event.conceptId));if(after&&after.score>=.7)success++}return success/interventions.length}
+export function evidenceMix(evidence:LearningEvidence[]){const out:Record<string,number>={};for(const e of evidence)out[e.type]=(out[e.type]??0)+1;return out}

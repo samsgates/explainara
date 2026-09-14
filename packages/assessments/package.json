@@ -1,0 +1,10 @@
+{
+  "name": "@explainara/assessments",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {".": "./src/index.ts"},
+  "scripts": {"typecheck": "tsc --noEmit"},
+  "dependencies": {"@explainara/shared": "workspace:*", "@explainara/mastery": "workspace:*"},
+  "devDependencies": {"typescript": "^5.9.2"}
+}

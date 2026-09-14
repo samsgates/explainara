@@ -1,0 +1,24 @@
+{
+  "name": "@explainara/openmaic-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@explainara/shared": "workspace:*"
+  },
+  "optionalDependencies": {
+    "@openmaic/dsl": "^0.11.1",
+    "@openmaic/generation": "^0.3.7",
+    "@openmaic/renderer": "^0.1.7",
+    "@openmaic/storage": "^0.29.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,4 @@
+import { Bot, Puzzle, Sparkles } from "lucide-react";
+import { Topbar } from "@/components/topbar";
+import { skillRegistry } from "@explainara/skills";
+export default function Skills(){return <><Topbar title="Teaching skills" eyebrow="Composable pedagogy"/><p className="muted">Skills let the Adaptive Director switch teaching strategy without rewriting the classroom runtime.</p><div className="grid grid-3" style={{marginTop:20}}>{skillRegistry.list().map(skill=><div className="card" key={skill.id}><span className="icon-box"><Puzzle size={18}/></span><h2 style={{margin:"14px 0 5px"}}>{skill.name}</h2><p className="muted" style={{fontSize:13,minHeight:48}}>{skill.description}</p><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{skill.triggers.slice(0,3).map(t=><span className="tag" key={t}>{t}</span>)}</div><button className="button" style={{marginTop:16,width:"100%"}}><Bot size={15}/>Configure skill</button></div>)}</div></>}
