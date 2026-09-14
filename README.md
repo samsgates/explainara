@@ -14,6 +14,12 @@ Explainara extends the interactive-course paradigm with five persistent intellig
 
 OpenMAIC integration is isolated behind `packages/openmaic-adapter`. Explainara does not fork OpenMAIC internals. The adapter can consume the published `@openmaic/*` SDK packages when available, while the rest of the product remains independently maintainable.
 
+## How Explainara works
+
+![Explainara workflow from content ingestion through adaptive learning and mastery](media_resources/howitsworks.png)
+
+*Explainara turns source material into a structured, continuously personalized learning experience.*
+
 ## Repository layout
 
 ```text
@@ -35,6 +41,12 @@ packages/
   shared/      Shared schemas and domain types
   skills/      Teaching skill registry
 ```
+
+## Architecture
+
+![Explainara high-level system architecture](media_resources/highlevel-architech-diagram.png)
+
+*The platform connects learner experiences to modular learning services, model providers, and production data infrastructure.*
 
 ## Quick start
 
